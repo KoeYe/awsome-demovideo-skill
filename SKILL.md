@@ -49,6 +49,87 @@ Otherwise, default to recommending per-scene renders + editor assembly.
 
 This skill bundles a working scaffold at `scaffold/` — copy it as the starting point for a new project, then read the references below as you need them.
 
+## The actual end-to-end loop (when the input is a paper / spec / repo)
+
+This is the workflow this skill is really designed for. The user doesn't usually walk in saying "I want an animated title that says X". They walk in with a **paper PDF, a project spec, or an existing repo**, and the question is "turn this into a 60-second video". The skill exists to make that loop fast and tractable.
+
+```
+1. Source material        →  paper PDF / spec / existing repo / README
+        ↓
+2. Claude analyzes        →  extract narrative beats; identify what each
+                             beat needs to SHOW (UI screen, experiment
+                             recording, chart, agent POV, etc.)
+        ↓
+3. Claude scaffolds        →  scene code + <VideoPlaceholder slot="..." />
+   with placeholders         in each visual region, plus an ASSETS.md
+                             listing every clip the user needs to record
+                             (slot name, duration, what it should show)
+        ↓
+4. User records footage   →  drops mp4s into public/clips/<slot>.mp4
+                             matching the slot names from the scaffold
+        ↓
+5. Claude swaps           →  replaces <VideoPlaceholder> with
+   placeholders for clips    <OffthreadVideo src={staticFile("clips/<slot>.mp4")}>
+        ↓
+6. Iterate scene-by-scene →  npm run render:<scene>, watch, tweak text /
+                             timing / animation, re-render. Code-side
+                             changes are fast; if footage needs re-recording,
+                             that's the slowest part of the loop.
+        ↓
+7. Assemble in editor     →  per-scene MP4s into DaVinci / Premiere / FCP,
+                             add music + voiceover + cross-scene
+                             transitions, export.
+```
+
+### Step 2 in detail — analyzing source material
+
+When the user hands over a paper / spec, do this BEFORE writing any code:
+
+1. **Extract the narrative.** What's the 3–5 beat arc? ("Problem → our method → key results → impact" is a starting template; vary it for the actual paper.) The narrative drives the scene list.
+2. **For each beat, decide what to SHOW.** Animated text alone is boring. Each beat should have a concrete visual — a UI screen, an experiment recording, a chart, a comparison, a system diagram. Match visuals to claims: if the paper claims "method X is 3× faster", show the side-by-side timing.
+3. **Distinguish what Remotion generates vs. what the user has to record.** Remotion is great for: titles, transitions, charts, UI mockups, layouts, animated diagrams. Remotion CANNOT generate: real screen recordings of the user's product, experiment footage, agent POV, anything from outside the project. List those as user-supplied footage.
+4. **Sketch the timeline before scaffolding.** Beat-by-beat with target durations summing to 30–90s. Update `TIMELINE` in `theme.ts` to match. Total length should land before scenes are built so each scene knows its budget.
+
+### Step 3 in detail — scaffolding with placeholders
+
+The skill's key handoff convention: **slot names**. Every clip the user needs to record gets a stable `slot` string. The placeholder + the real clip share that slot name.
+
+```tsx
+// During scaffolding:
+<VideoPlaceholder
+  slot="agent-loop"
+  description="Continuous agent recording: walks, fails, retries with updated policy."
+  accent={COLORS.blue}
+/>
+
+// After the user records public/clips/agent-loop.mp4, swap to:
+<OffthreadVideo
+  src={staticFile("clips/agent-loop.mp4")}
+  muted
+  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+/>
+```
+
+**Always write an `ASSETS.md`** in the scaffold root (the scaffold ships a template). It lists every slot the user needs to fill, with: slot name (= filename), what it should show, target duration, aspect ratio recommendation, and any timing notes (e.g. "fail event around 7s mark"). This is the single source of truth for the user's recording task.
+
+### Step 4–5 in detail — the asset handoff
+
+The user comes back with files dropped into `public/clips/`. Three things to check:
+
+1. **Filenames match slot names exactly.** `agent-loop.mp4`, not `agent_loop.mp4` or `AgentLoop.mp4`.
+2. **Duration is at least the scene length** (or use `<Loop>` if it's shorter and meant to repeat).
+3. **Aspect ratio is sensible** — for full-frame scenes, match the composition's 1920×1080. For cards in a 2×2 grid, 4:3 or 16:9 both work; just be consistent.
+
+Then mechanically replace each `<VideoPlaceholder>` with `<OffthreadVideo>`. That's a one-line swap per slot; no animation logic changes. If the user's recording is timing-sensitive (e.g., "fail event at 7s"), expose it as a scene prop so timing-dependent overlays (FAIL stamp, reward number) can be tuned without re-recording.
+
+### Why this loop matters for the skill
+
+The skill's job isn't "write Remotion code on demand" — it's **make the source-material-to-shipped-video loop tractable**. The placeholder pattern is what lets Claude scaffold an entire video's structure in one pass, then hand back an ASSETS.md so the user knows exactly what to record. Without it, the loop stalls — the user records the wrong things, or scaffolding waits on footage, or the code structure has to be retrofitted after-the-fact.
+
+When a user shows up with source material, the right opening move is usually:
+
+> "Let me read the paper / spec first. Then I'll propose a scene-by-scene outline with target durations, a list of clips you'll need to record, and scaffold the code with placeholders so you can start recording while I keep building scenes."
+
 ## Quickstart for a new project
 
 ```bash

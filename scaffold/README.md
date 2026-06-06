@@ -11,6 +11,15 @@ npm run dev        # opens Remotion Studio at http://localhost:3000
 
 In Studio you can scrub through scenes, adjust props via the right-hand panel, and click "Save default props" to write your tweaks back to `Root.tsx`.
 
+## The clip workflow — read ASSETS.md
+
+When Claude scaffolds scenes for you, it leaves `<VideoPlaceholder slot="...">` markers where your recorded footage will go, and writes the full clip list to [`ASSETS.md`](./ASSETS.md). Your loop:
+
+1. Open `ASSETS.md` — it lists every clip needed (slot name, scene, duration, aspect, what to capture).
+2. Record each clip and save as `public/clips/<slot>.mp4` — filename must match the slot name exactly.
+3. Ask Claude to swap the placeholders for `<OffthreadVideo>` (one-line change per slot), or do it yourself.
+4. `npm run render:<scene>` and check the result.
+
 ## Rendering — the workflow that actually works
 
 **Render each scene as its own clip. Assemble + score in a downstream editor** (DaVinci Resolve, Premiere, Final Cut). The full-timeline MP4 is for preview, not for delivery.

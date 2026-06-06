@@ -102,7 +102,41 @@ remotion-demo-video/
 
 ---
 
-## The workflow we actually use (read this!)
+## The end-to-end workflow this skill is designed for
+
+The skill exists because of one specific loop we kept doing. The typical entry point isn't "I want an animated title" — it's **"I have a paper / spec / repo; turn it into a 60-second video"**. The skill makes that loop tractable.
+
+```
+1. Source material        →  paper PDF / project spec / existing repo
+        ↓
+2. Claude analyzes         →  extracts narrative beats; identifies what
+                              each beat needs to SHOW (UI screen, recording,
+                              chart, agent POV, etc.)
+        ↓
+3. Claude scaffolds       →  Remotion scenes with <VideoPlaceholder> slots
+   with placeholders         + an ASSETS.md listing every clip the user
+                              needs to record (slot name = filename;
+                              duration, aspect, what to capture)
+        ↓
+4. User records footage   →  drops mp4s into public/clips/<slot>.mp4
+                              matching slot names from the scaffold
+        ↓
+5. Claude swaps           →  replaces <VideoPlaceholder> with
+   placeholders → clips      <OffthreadVideo src={staticFile("clips/...")}>
+        ↓
+6. Iterate scene-by-scene →  npm run render:<scene>, watch, tweak text,
+                              animation, or timing, re-render. Code is fast;
+                              re-recording footage is the slowest part of the
+                              loop, so design slots to be re-shoot-resistant.
+        ↓
+7. Assemble in editor     →  per-scene MP4s into DaVinci / Premiere / FCP,
+                              add music + voiceover + cross-scene
+                              transitions, export.
+```
+
+The **slot-name convention** is what makes the handoff work: `<VideoPlaceholder slot="agent-loop">` corresponds to `public/clips/agent-loop.mp4`. Claude scaffolds with placeholders and writes the asset list; the user records to the listed names; swapping placeholder → real clip is a one-line change in the scene file. No retrofitting, no ambiguity about what's needed.
+
+## Why scene-by-scene + downstream editor
 
 After a few iterations on a real video, we converged on one specific way of working that we recommend strongly:
 
