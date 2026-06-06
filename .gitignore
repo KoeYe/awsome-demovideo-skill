@@ -1,0 +1,10 @@
+# Editor / OS
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Skill is meant to be installed clean — never commit downstream renders or deps
+**/node_modules/
+**/out/
+**/.remotion/

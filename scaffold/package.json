@@ -1,0 +1,40 @@
+{
+  "name": "my-demo-video",
+  "version": "0.1.0",
+  "description": "Promotional / demo video built with Remotion",
+  "private": true,
+  "scripts": {
+    "dev":     "remotion studio",
+
+    "//1": "── PRIMARY: render each scene as its own clip, then assemble in DaVinci / Premiere / Final Cut.",
+    "render:opening":             "remotion render src/index.ts OpeningTitle out/opening.mp4",
+    "render:opening:transparent": "remotion render src/index.ts OpeningTitle out/opening.mov --codec=prores --pixel-format=yuva444p10le --prores-profile=4444 --image-format=png",
+
+    "//2": "── SECONDARY: render the full timeline as a preview / fallback. NOT the primary deliverable.",
+    "render": "remotion render src/index.ts MainTimeline out/full.mp4",
+
+    "//3": "── Pre-hooks: sync clips from configured sources before any dev/render.",
+    "sync-clips": "node scripts/sync-clips.mjs",
+    "predev":     "npm run sync-clips",
+    "prerender":  "npm run sync-clips",
+
+    "preview": "remotion preview"
+  },
+  "dependencies": {
+    "@remotion/bundler":       "^4.0.462",
+    "@remotion/cli":           "^4.0.462",
+    "@remotion/google-fonts":  "^4.0.462",
+    "@remotion/renderer":      "^4.0.462",
+    "@remotion/shapes":        "^4.0.462",
+    "@remotion/transitions":   "^4.0.462",
+    "react":     "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion":  "^4.0.462",
+    "zod":       "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.0",
+    "@types/web":   "0.0.166",
+    "typescript":   "5.8.2"
+  }
+}
